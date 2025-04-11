@@ -125,10 +125,15 @@ public class ICarLeaseRepositoryImpl implements ICarLeaseRepository {
     }
 
     
-    public Lease createLease(int carID, int customerID, Date startDate, Date endDate) throws SQLException {
+    public Lease createLease(int carID, int customerID, Date startDate, Date endDate) throws SQLException, VehicleNotFoundException, CustomerNotFoundException{
+        Customer customer = findCustomerById(customerID); 
+        Vehicle vehicle = findCarById(carID); 
+        if (!vehicle.getStatus().equalsIgnoreCase("available")) {
+            throw new SQLException("Vehicle is currently not available for leasing.");
+        }
         long timeDiff = endDate.getTime() - startDate.getTime();
     	long dayDiff = timeDiff / (1000 * 60 * 60 * 24);
-    	String type = (dayDiff >= 30) ? "Monthly" : "Daily";       
+    	String type = (dayDiff >= 30) ? "Monthly" : "Daily"; 
     	String sql = "insert into Lease (vehicleID, customerID, startDate, endDate, type) VALUES (?, ?, ?, ?, ?)";
         PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
         ps.setInt(1, carID);
@@ -137,15 +142,17 @@ public class ICarLeaseRepositoryImpl implements ICarLeaseRepository {
         ps.setDate(4, new java.sql.Date(endDate.getTime()));
         ps.setString(5, type);
         ps.executeUpdate();
+        
+        ResultSet rs = ps.getGeneratedKeys();
+        if(!rs.next()) {
+        	throw new SQLException("Lease ID could not be retrieved.");
+        }
+        int leaseID = rs.getInt(1);
         PreparedStatement updateCar = conn.prepareStatement("update Vehicle set status = 'notAvailable' where vehicleID = ?");
         updateCar.setInt(1, carID);
         updateCar.executeUpdate();
-        ResultSet rs = ps.getGeneratedKeys();
-        if(rs.next()) {
-        return new Lease(rs.getInt(1), carID, customerID, startDate, endDate, type);
-    } else {
-        throw new SQLException("Lease ID could not be retrieved.");
-    }
+        System.out.println("Lease created successfully.");
+        return new Lease(leaseID, carID, customerID, startDate, endDate, type);
     }
 
     public Lease returnCar(int leaseID) throws SQLException, LeaseNotFoundException , VehicleNotFoundException{
@@ -170,7 +177,7 @@ public class ICarLeaseRepositoryImpl implements ICarLeaseRepository {
 
     public List<Lease> listActiveLeases() throws SQLException {
         List<Lease> leases = new ArrayList<>();
-        String sql = "select * from Lease where endDate >= CURDATE()";
+        String sql = "SELECT l.* FROM Lease l JOIN Vehicle v ON l.vehicleID = v.vehicleID WHERE l.endDate >= CURDATE() AND v.status = 'notAvailable'";
         ResultSet rs = conn.createStatement().executeQuery(sql);
         while (rs.next()) {
             leases.add(new Lease(rs.getInt("leaseID"), rs.getInt("vehicleID"), rs.getInt("customerID"),

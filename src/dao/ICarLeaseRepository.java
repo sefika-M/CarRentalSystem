@@ -19,7 +19,7 @@ public interface ICarLeaseRepository {
 	    List<Customer> listCustomers()throws SQLException;
 	    Customer findCustomerById(int customerID) throws SQLException, CustomerNotFoundException;
 
-	    Lease createLease(int customerID, int carID, Date startDate, Date endDate) throws SQLException;
+	    Lease createLease(int customerID, int carID, Date startDate, Date endDate) throws SQLException, VehicleNotFoundException, CustomerNotFoundException;
 	    Lease returnCar(int leaseID) throws SQLException, LeaseNotFoundException, VehicleNotFoundException;
 	    List<Lease> listActiveLeases() throws SQLException;
 	    List<Lease> listLeaseHistory() throws SQLException;
