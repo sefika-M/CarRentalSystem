@@ -306,6 +306,10 @@ public class Main{
                     sc.nextLine();
                     System.out.print("Enter Amount: ");
                     double amount = sc.nextDouble();
+                    if (amount <= 0) {
+                        System.out.println("Error: Payment amount must be greater than 0.");
+                        break;
+                    }
                     Lease lease = new Lease();
                     lease.setLeaseID(LeaseId);
                     repo.recordPayment(lease, amount);                    

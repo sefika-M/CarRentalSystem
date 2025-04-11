@@ -192,6 +192,10 @@ public class ICarLeaseRepositoryImpl implements ICarLeaseRepository {
 
     
     public void recordPayment(Lease lease, double amount) throws SQLException, LeaseNotFoundException {
+    	Lease existingLease = findLease(lease.getLeaseID());
+    	 if (amount <= 0) {
+    	        throw new SQLException("Amount must be greater than 0.");
+    	    }
         String sql = "insert into Payment (leaseID, paymentDate, amount) values (?, CURDATE(), ?)";
         PreparedStatement ps = conn.prepareStatement(sql);
         ps.setInt(1, lease.getLeaseID());
